@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abode — Premium 3D Experience</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- GSAP & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* ───────────── RESET & BASE ───────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0a0a;
+            color: #f0ece4;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ───────────── 3D CANVAS ───────────── */
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ───────────── GLASS / OVERLAY ───────────── */
+        .glass {
+            background: rgba(20, 18, 16, 0.55);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ───────────── CONTENT WRAPPER ───────────── */
+        .content {
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .content section,
+        .content .container,
+        .content .card,
+        .content a,
+        .content button {
+            pointer-events: auto;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* ───────────── HERO ───────────── */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 24px;
+            position: relative;
+        }
+        .hero .badge {
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 60px;
+            padding: 6px 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #d4af37;
+            margin-bottom: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .hero h1 {
+            font-size: clamp(3.2rem, 12vw, 8rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #f5e7d3 0%, #d4af37 50%, #b8860b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            max-width: 900px;
+        }
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 400;
+            color: rgba(240, 236, 228, 0.75);
+            max-width: 600px;
+            margin: 16px auto 32px;
+            letter-spacing: 0.3px;
+        }
+        .hero .btn-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 40px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            text-decoration: none;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            color: #0b0a0a;
+            box-shadow: 0 8px 24px rgba(212, 175, 55, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 16px 40px rgba(212, 175, 55, 0.5);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #f0ece4;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-4px);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+        .btn-pulse {
+            animation: pulseBtn 2.4s infinite ease-in-out;
+        }
+        @keyframes pulseBtn {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 16px rgba(212, 175, 55, 0);
+            }
+        }
+
+        /* ───────────── SECTION COMMON ───────────── */
+        .section {
+            padding: 100px 0;
+            position: relative;
+        }
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #d4af37;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            color: #f0ece4;
+        }
+        .section-title .highlight {
+            background: linear-gradient(135deg, #d4af37, #f5cb5c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .section-desc {
+            font-size: 1.1rem;
+            color: rgba(240, 236, 228, 0.65);
+            max-width: 560px;
+            line-height: 1.7;
+        }
+
+        /* ───────────── CARDS (Glassmorphism) ───────────── */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 32px;
+            margin-top: 48px;
+        }
+        .card {
+            padding: 36px 32px;
+            background: rgba(20, 18, 16, 0.55);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 28px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.05), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.6s;
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        .card:hover {
+            transform: translateY(-12px) scale(1.01);
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 30px 50px -20px rgba(0, 0, 0, 0.6);
+        }
+        .card:hover::before {
+            opacity: 1;
+        }
+        .card .icon {
+            font-size: 2.6rem;
+            margin-bottom: 20px;
+            display: block;
+            color: #d4af37;
+        }
+        .card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #f0ece4;
+        }
+        .card p {
+            font-size: 0.95rem;
+            color: rgba(240, 236, 228, 0.65);
+            line-height: 1.7;
+        }
+
+        /* ───────────── SHOWCASE (Gallery) ───────────── */
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
+            margin-top: 48px;
+        }
+        .showcase-item {
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4/3;
+            background: rgba(20, 18, 16, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: rgba(212, 175, 55, 0.2);
+        }
+        .showcase-item:hover {
+            transform: scale(1.02);
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+        }
+        .showcase-item .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            color: #f0ece4;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.4s;
+        }
+        .showcase-item:hover .overlay {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* ───────────── TESTIMONIALS ───────────── */
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 32px;
+            margin-top: 48px;
+        }
+        .testimonial-card {
+            padding: 32px 28px;
+            background: rgba(20, 18, 16, 0.5);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 28px;
+            transition: all 0.4s;
+        }
+        .testimonial-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(212, 175, 55, 0.25);
+        }
+        .testimonial-card .stars {
+            color: #d4af37;
+            letter-spacing: 2px;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+        .testimonial-card blockquote {
+            font-style: italic;
+            color: rgba(240, 236, 228, 0.8);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        .testimonial-card .author {
+            margin-top: 16px;
+            font-weight: 600;
+            color: #f0ece4;
+        }
+        .testimonial-card .role {
+            font-size: 0.8rem;
+            color: rgba(240, 236, 228, 0.4);
+        }
+
+        /* ───────────── FOOTER ───────────── */
+        footer {
+            padding: 60px 0 40px;
+            border-top: 1px solid rgba(212, 175, 55, 0.08);
+            text-align: center;
+            color: rgba(240, 236, 228, 0.35);
+            font-size: 0.85rem;
+        }
+        footer .socials {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        footer .socials a {
+            color: rgba(240, 236, 228, 0.4);
+            font-size: 1.4rem;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        footer .socials a:hover {
+            color: #d4af37;
+            transform: translateY(-3px);
+        }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        footer .footer-links a {
+            color: rgba(240, 236, 228, 0.4);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+        footer .footer-links a:hover {
+            color: #d4af37;
+        }
+
+        /* ───────────── RESPONSIVE ───────────── */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+            .section {
+                padding: 60px 0;
+            }
+            .hero h1 {
+                font-size: clamp(2.6rem, 14vw, 4.2rem);
+            }
+            .card-grid,
+            .showcase-grid,
+            .testimonial-grid {
+                grid-template-columns: 1fr;
+            }
+            .btn {
+                padding: 12px 28px;
+                font-size: 0.85rem;
+            }
+            .hero .btn-group {
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+            .hero .btn-group .btn {
+                width: 100%;
+                max-width: 300px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.8rem;
+            }
+            .card {
+                padding: 24px 20px;
+            }
+        }
+
+        /* ───────────── UTILITY ───────────── */
+        .text-center {
+            text-align: center;
+        }
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .mt-8 {
+            margin-top: 32px;
+        }
+        .gap-4 {
+            gap: 16px;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── THREE.JS CANVAS ─── -->
+    <canvas id="three-canvas"></canvas>
+
+    <!-- ─── CONTENT ─── -->
+    <div class="content">
+
+        <!-- ─── HERO ─── -->
+        <section class="hero" id="hero">
+            <div class="badge" data-gsap="fade-up">✦ Premium 3D Experience</div>
+            <h1 data-gsap="fade-up" data-delay="0.1">Abode.<br /><span style="background:linear-gradient(135deg,#d4af37,#f5cb5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Beyond Space.</span></h1>
+            <p data-gsap="fade-up" data-delay="0.2">Immersive 3D design, crafted for the future of digital experiences.</p>
+            <div class="btn-group" data-gsap="fade-up" data-delay="0.35">
+                <a href="#about" class="btn btn-primary btn-pulse">Explore Now</a>
+                <a href="#showcase" class="btn btn-secondary">View Work</a>
+            </div>
+        </section>
+
+        <!-- ─── ABOUT / FEATURES ─── -->
+        <section class="section" id="about">
+            <div class="container">
+                <div class="text-center" data-gsap="fade-up">
+                    <div class="section-label">✦ About Abode</div>
+                    <h2 class="section-title">Crafted with <span class="highlight">Precision</span></h2>
+                    <p class="section-desc mx-auto">We blend cutting‑edge 3D technology with elegant design to build digital environments that feel alive.</p>
+                </div>
+                <div class="card-grid" data-gsap="fade-up" data-stagger="0.12">
+                    <div class="card">
+                        <span class="icon">✦</span>
+                        <h3>Immersive 3D</h3>
+                        <p>Real‑time 3D scenes with dynamic lighting, shadows, and rich material reflections.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon">◈</span>
+                        <h3>Fluid Motion</h3>
+                        <p>Silky scroll‑triggered animations powered by GSAP for a cinematic browsing experience.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon">◇</span>
+                        <h3>Glass Aesthetic</h3>
+                        <p>Sophisticated glass‑morphism surfaces with a dark, luxurious color palette.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon">◆</span>
+                        <h3>Responsive</h3>
+                        <p>Flawless across all devices — from large desktops to mobile screens.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── SHOWCASE / GALLERY ─── -->
+        <section class="section" id="showcase">
+            <div class="container">
+                <div class="text-center" data-gsap="fade-up">
+                    <div class="section-label">✦ Gallery</div>
+                    <h2 class="section-title">Featured <span class="highlight">Work</span></h2>
+                    <p class="section-desc mx-auto">Explore our latest 3D projects and interactive experiences.</p>
+                </div>
+                <div class="showcase-grid" data-gsap="fade-up" data-stagger="0.1">
+                    <div class="showcase-item">
+                        <span>◈</span>
+                        <div class="overlay">Project Nebula — 2025</div>
+                    </div>
+                    <div class="showcase-item">
+                        <span>✦</span>
+                        <div class="overlay">Aurora Interactive — 2025</div>
+                    </div>
+                    <div class="showcase-item">
+                        <span>◇</span>
+                        <div class="overlay">Metaverse Pavilion — 2024</div>
+                    </div>
+                    <div class="showcase-item">
+                        <span>◆</span>
+                        <div class="overlay">Digital Sculpture — 2024</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── TESTIMONIALS ─── -->
+        <section class="section" id="testimonials">
+            <div class="container">
+                <div class="text-center" data-gsap="fade-up">
+                    <div class="section-label">✦ Testimonials</div>
+                    <h2 class="section-title">What Our <span class="highlight">Clients Say</span></h2>
+                </div>
+                <div class="testimonial-grid" data-gsap="fade-up" data-stagger="0.12">
+                    <div class="testimonial-card">
+                        <div class="stars">★★★★★</div>
+                        <blockquote>“Abode’s 3D work is next‑level. The attention to detail and fluid animations made our brand stand out.”</blockquote>
+                        <div class="author">— Alex Rivera</div>
+                        <div class="role">Creative Director, Lumina</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="stars">★★★★★</div>
+                        <blockquote>“Working with Abode was seamless. They delivered a stunning immersive experience that exceeded all expectations.”</blockquote>
+                        <div class="author">— Morgan Chen</div>
+                        <div class="role">CEO, Apex Studios</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="stars">★★★★★</div>
+                        <blockquote>“The glass‑morphism and 3D depth created a truly premium feel. Our users can’t stop talking about it.”</blockquote>
+                        <div class="author">— Jamie Park</div>
+                        <div class="role">Head of Design, Nova</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── FOOTER ─── -->
+        <footer>
+            <div class="container">
+                <div class="socials">
+                    <a href="#" aria-label="Instagram">✦</a>
+                    <a href="#" aria-label="Twitter">◈</a>
+                    <a href="#" aria-label="Dribbble">◇</a>
+                    <a href="#" aria-label="GitHub">◆</a>
+                </div>
+                <div class="footer-links">
+                    <a href="#about">About</a>
+                    <a href="#showcase">Work</a>
+                    <a href="#testimonials">Testimonials</a>
+                    <a href="#">Contact</a>
+                </div>
+                <p>&copy; 2025 Abode. Crafted with Three.js &amp; GSAP.</p>
+            </div>
+        </footer>
+
+    </div>
+    <!-- /content -->
+
+    <!-- ─── SCRIPTS ─── -->
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 1.  GSAP + ScrollTrigger registration
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        gsap.registerPlugin(ScrollTrigger);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 2.  THREE.JS — Immersive 3D Scene
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        (function initThree() {
+            const canvas = document.getElementById('three-canvas');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b0a0a);
+
+            // ─── Camera ───
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0.5, 8);
+            camera.lookAt(0, 0, 0);
+
+            // ─── Renderer ───
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: false,
+                antialias: true,
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+
+            // ─── Lights ───
+            const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xffeebb, 1.6);
+            keyLight.position.set(4, 6, 4);
+            keyLight.castShadow = true;
+            scene.add(keyLight);
+
+            const fillLight = new THREE.DirectionalLight(0x8899cc, 0.8);
+            fillLight.position.set(-3, 2, 2);
+            scene.add(fillLight);
+
+            const rimLight = new THREE.DirectionalLight(0xd4af37, 0.6);
+            rimLight.position.set(-1, -1, -4);
+            scene.add(rimLight);
+
+            const pointLight = new THREE.PointLight(0xd4af37, 0.5, 10);
+            pointLight.position.set(1, 2, 3);
+            scene.add(pointLight);
+
+            // ─── Main Object: Torus Knot (Premium abstract) ───
+            const geometry = new THREE.TorusKnotGeometry(1.1, 0.35, 256, 32);
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xd4af37,
+                metalness: 0.85,
+                roughness: 0.25,
+                emissive: 0x553311,
+                emissiveIntensity: 0.25,
+                clearcoat: 0.3,
+                clearcoatRoughness: 0.2,
+                envMapIntensity: 1.0,
+            });
+            const knot = new THREE.Mesh(geometry, material);
+            knot.castShadow = true;
+            knot.receiveShadow = true;
+            scene.add(knot);
+
+            // ─── Inner Ring ───
+            const ringGeo = new THREE.TorusGeometry(1.5, 0.04, 64, 64);
+            const ringMat = new THREE.MeshPhysicalMaterial({
+                color: 0xd4af37,
+                metalness: 0.9,
+                roughness: 0.15,
+                emissive: 0x553311,
+                emissiveIntensity: 0.1,
+                transparent: true,
+                opacity: 0.6,
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            scene.add(ring);
+
+            // ─── Particle System ───
+            const particleCount = 1800;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+            for (let i = 0; i < particleCount; i++) {
+                const radius = 3.2 + Math.random() * 2.8;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta) * 0.6;
+                positions[i * 3 + 2] = radius * Math.cos(phi);
+                const c = new THREE.Color().setHSL(0.10 + Math.random() * 0.08, 0.7, 0.5 + Math.random() * 0.3);
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+                sizes[i] = 0.02 + Math.random() * 0.04;
+            }
+            const particleGeo = new THREE.BufferGeometry();
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const particleMat = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true,
+            });
+            const particles = new THREE.Points(particleGeo, particleMat);
+            scene.add(particles);
+
+            // ─── Mouse tracking ───
+            let mouseX = 0,
+                mouseY = 0;
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            // ─── Resize ───
+            function resize() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            }
+            window.addEventListener('resize', resize);
+
+            // ─── Animation Loop ───
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const t = performance.now() * 0.0006;
+
+                // Rotate knot
+                knot.rotation.x = t * 0.3 + Math.sin(t * 0.2) * 0.15;
+                knot.rotation.y = t * 0.5;
+                knot.rotation.z = Math.sin(t * 0.15) * 0.1;
+
+                // Ring follows
+                ring.rotation.y = t * 0.4;
+                ring.rotation.x = Math.PI / 2 + Math.sin(t * 0.2) * 0.08;
+
+                // Particles drift
+                particles.rotation.y = t * 0.03;
+                particles.rotation.x = Math.sin(t * 0.02) * 0.05;
+
+                // Camera follow mouse
+                camera.position.x += (mouseX * 0.8 - camera.position.x) * 0.025;
+                camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.025;
+                camera.lookAt(0, 0.2, 0);
+
+                // Light animation
+                pointLight.position.x = 1.5 + Math.sin(t * 0.7) * 1.2;
+                pointLight.position.y = 1.5 + Math.cos(t * 0.5) * 1.2;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        })();
+
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 3.  GSAP Scroll‑Triggered Animations
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ─── Fade / Slide up helper ───
+            const fadeElements = document.querySelectorAll('[data-gsap="fade-up"]');
+            fadeElements.forEach((el, i) => {
+                const delay = parseFloat(el.dataset.delay) || 0;
+                const stagger = parseFloat(el.dataset.stagger) || 0;
+                // If it's a parent with child cards, handle stagger on children
+                if (el.dataset.stagger && el.children.length > 0) {
+                    const children = Array.from(el.children);
+                    gsap.fromTo(children, {
+                        opacity: 0,
+                        y: 50,
+                    }, {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.9,
+                        ease: 'power3.out',
+                        stagger: parseFloat(el.dataset.stagger),
+                        scrollTrigger: {
+                            trigger: el,
+                            start: 'top 85%',
+                            toggleActions: 'play none none reverse',
+                        },
+                    });
+                    return;
+                }
+                // Single element
+                gsap.fromTo(el, {
+                    opacity: 0,
+                    y: 50,
+                }, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.9,
+                    delay: delay,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 88%',
+                        toggleActions: 'play none none reverse',
+                    },
+                });
+            });
+
+            // ─── Cards: additional hover micro-interaction (already in CSS) ───
+
+            // ─── Hero: cinematic entrance (already visible) ───
+            // We add a tiny extra polish: hero badge and h1 slide from slightly different angles
+            gsap.fromTo('.hero .badge', { opacity: 0, y: -30 }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                delay: 0.1,
+                ease: 'power2.out',
+            });
+            gsap.fromTo('.hero h1', { opacity: 0, scale: 0.96 }, {
+                opacity: 1,
+                scale: 1,
+                duration: 1,
+                delay: 0.2,
+                ease: 'power3.out',
+            });
+            gsap.fromTo('.hero p', { opacity: 0, y: 20 }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                delay: 0.35,
+                ease: 'power2.out',
+            });
+            gsap.fromTo('.hero .btn-group', { opacity: 0, y: 20 }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                delay: 0.5,
+                ease: 'power2.out',
+            });
+
+            // ─── Showcase items: scale on scroll ───
+            document.querySelectorAll('.showcase-item').forEach((item) => {
+                gsap.fromTo(item, { scale: 0.92, opacity: 0.6 }, {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 0.9,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: item,
+                        start: 'top 90%',
+                        toggleActions: 'play none none reverse',
+                    },
+                });
+            });
+
+            // ─── Testimonial cards: subtle slide ───
+            document.querySelectorAll('.testimonial-card').forEach((card, i) => {
+                gsap.fromTo(card, { opacity: 0, x: i % 2 === 0 ? -30 : 30 }, {
+                    opacity: 1,
+                    x: 0,
+                    duration: 0.8,
+                    delay: i * 0.08,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 88%',
+                        toggleActions: 'play none none reverse',
+                    },
+                });
+            });
+
+            // ─── Footer fade ───
+            gsap.fromTo('footer', { opacity: 0, y: 30 }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                scrollTrigger: {
+                    trigger: 'footer',
+                    start: 'top 95%',
+                    toggleActions: 'play none none reverse',
+                },
+            });
+
+        });
+    </script>
+
+</body>
+</html>
